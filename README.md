@@ -79,8 +79,14 @@ include the model download and a full speech-to-text run.
 
 `.github/workflows/pages.yml` typechecks, tests, builds, runs the PWA checks
 against the built artifact, and deploys it to GitHub Pages on every push to
-`main`. It needs **Settings → Pages → Source: GitHub Actions** (not "Deploy from
-a branch" — the repository root holds sources, not a built site).
+`main`. It also claims the publishing source: `configure-pages` runs with
+`enablement: true`, which sets **Settings → Pages → Source** to GitHub Actions.
+
+That matters more than it sounds. Left on "Deploy from a branch", GitHub
+publishes the repository root, and the root `index.html` is the *source*
+document — it loads `/src/main.ts`, which no browser can run. Both publishers
+then race on every push, and the site flips between a working app and a blank
+page depending on which finished last.
 
 The build uses relative URLs throughout, so the app works at a domain root and
 under a project subpath such as `https://<user>.github.io/vid2claude/` without

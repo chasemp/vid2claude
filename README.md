@@ -75,6 +75,27 @@ npm run check-pwa      # offline reload and the share-target endpoint, against d
 `npm run spikes -- --headed` shows the browser. Add `--with-transcription` to
 include the model download and a full speech-to-text run.
 
+## Deploying
+
+`.github/workflows/pages.yml` typechecks, tests, builds, runs the PWA checks
+against the built artifact, and deploys it to GitHub Pages on every push to
+`main`. It needs **Settings → Pages → Source: GitHub Actions** (not "Deploy from
+a branch" — the repository root holds sources, not a built site).
+
+The build uses relative URLs throughout, so the app works at a domain root and
+under a project subpath such as `https://<user>.github.io/vid2claude/` without
+configuration. `npm run check-pwa` serves the built site under a subpath by
+default for exactly that reason.
+
+Two notes about Pages specifically:
+
+- It cannot send `Cross-Origin-Opener-Policy` / `Cross-Origin-Embedder-Policy`
+  headers, so the page is not cross-origin isolated and the WebAssembly backend
+  runs single-threaded. WebGPU, the path most phones will take, is unaffected.
+  A host that can set those two headers makes the WASM fallback faster.
+- The app must be served over HTTPS. Service workers, and therefore offline use
+  and the Android share target, do not exist on plain HTTP.
+
 The app is a static site: `dist/` can be served from anywhere that speaks
 HTTPS. Model weights are fetched from the Hugging Face CDN on first use and
 cached by transformers.js; the onnxruntime WebAssembly files are served from

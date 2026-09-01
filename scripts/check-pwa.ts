@@ -21,6 +21,11 @@ async function main(): Promise<void> {
     process.exit(2);
   }
 
+  // GitHub Pages serves a project site from /<repo>/, so the checks run under a
+  // subpath by default: every URL the app builds for itself has to be relative.
+  const baseArg = process.argv.find((arg) => arg.startsWith("--base="));
+  const basePath = baseArg ? baseArg.slice("--base=".length) : "/vid2claude/";
+
   let server: PreviewServer | null = null;
   let browser: Browser | null = null;
   const failures: string[] = [];
@@ -30,14 +35,19 @@ async function main(): Promise<void> {
   };
 
   try {
-    server = await preview({ preview: { port: 5198, strictPort: true }, logLevel: "warn" });
-    const base = "http://localhost:5198";
+    server = await preview({
+      base: basePath,
+      preview: { port: 5198, strictPort: true },
+      logLevel: "warn",
+    });
+    const base = `http://localhost:5198${basePath}`.replace(/\/$/, "");
+    console.log(`serving dist/ at ${base}/`);
 
     browser = await chromium.launch({ headless: true, executablePath: findChromium() });
     const context = await browser.newContext();
     const page = await context.newPage();
 
-    await page.goto(base);
+    await page.goto(`${base}/`);
     await page.waitForSelector("#choose");
     const registered = await page.evaluate(async () => {
       const registration = await navigator.serviceWorker.ready;

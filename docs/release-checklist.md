@@ -6,7 +6,7 @@ Everything here is a command, except the last section, which needs hardware.
 npm run typecheck
 npm test                 # bundle structure, timestamp monotonicity, frame cap, ZIP round trip
 npm run build
-npm run check-pwa        # offline second load, share-target endpoint
+npm run check-pwa        # offline second load, share-target endpoint, under a project subpath
 npm run fixtures && npm run spikes   # the assumption checks, against real modules in a real browser
 npm run validate-bundle -- fixtures/spike-bundle.zip
 ```

@@ -12,7 +12,8 @@
 import { decodeToMono16k } from "../src/audio/decode";
 import { createZip } from "../src/bundle/zip";
 import { runPipeline } from "../src/pipeline";
-import { captureFrames, fitSize, openVideo } from "../src/video/frames";
+import { captureFrames, fitSize, openVideo, VideoLoadError } from "../src/video/frames";
+import { diagnoseVideo } from "../src/video/diagnose";
 import { detectSceneChanges } from "../src/video/scene-change";
 import { DEFAULT_SETTINGS, type Settings } from "../src/types";
 
@@ -257,6 +258,27 @@ export async function sceneChanges(url: string, truthUrl: string, disableRvfc = 
   }
 }
 
+/**
+ * What the app tells a user when this browser refuses a recording.
+ *
+ * Playwright's Chromium has no H.264 or HEVC decoder, so it refuses exactly the
+ * way a phone without an HEVC decoder does: the same MEDIA_ERR_SRC_NOT_SUPPORTED
+ * with no further detail. That makes it a real test of the diagnosis, not a
+ * simulated one.
+ */
+export async function diagnoseFixture(url: string): Promise<unknown> {
+  const file = await fetchFile(url);
+  try {
+    const handle = await openVideo(file);
+    handle.release();
+    return { opened: true, fixture: file.name };
+  } catch (err) {
+    if (!(err instanceof VideoLoadError)) throw err;
+    const diagnosis = await diagnoseVideo(file, err.mediaError);
+    return { opened: false, fixture: file.name, ...diagnosis };
+  }
+}
+
 /** A whole run, returned as base64 so the node side can validate the ZIP. */
 export async function fullRun(url: string, overrides: Partial<Settings> = {}): Promise<unknown> {
   const file = await fetchFile(url);
@@ -324,5 +346,6 @@ window.spikes = {
   a5Frames,
   a5Rotation,
   sceneChanges,
+  diagnoseFixture,
   fullRun,
 } as unknown as Window["spikes"];

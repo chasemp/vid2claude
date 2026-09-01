@@ -21,7 +21,12 @@ export interface VideoHandle {
   release(): void;
 }
 
-export class VideoLoadError extends Error {}
+export class VideoLoadError extends Error {
+  constructor(message: string, readonly mediaError: MediaError | null = null) {
+    super(message);
+    this.name = "VideoLoadError";
+  }
+}
 
 /** Loads a file into a hidden <video> and waits for metadata. */
 export async function openVideo(file: File | Blob): Promise<VideoHandle> {
@@ -30,7 +35,6 @@ export async function openVideo(file: File | Blob): Promise<VideoHandle> {
   el.preload = "auto";
   el.muted = true;
   el.playsInline = true;
-  el.crossOrigin = "anonymous";
   // Safari will not decode frames for a video that was never in the document.
   el.style.cssText = "position:fixed;left:-10000px;top:0;width:1px;height:1px;opacity:0";
   document.body.appendChild(el);
@@ -39,12 +43,12 @@ export async function openVideo(file: File | Blob): Promise<VideoHandle> {
   try {
     await waitForMetadata(el);
   } catch (err) {
+    const mediaError = el.error;
     el.remove();
     URL.revokeObjectURL(url);
-    throw new VideoLoadError(
-      `Could not read this file as video (${(err as Error).message}). ` +
-        `Try an .mp4 or .mov exported by your device's screen recorder.`,
-    );
+    // The caller pairs this with video/diagnose.ts, which can say which codec
+    // the file actually uses; on its own, `media error 4` tells nobody anything.
+    throw new VideoLoadError(`Could not read this file as video (${(err as Error).message}).`, mediaError);
   }
 
   // Some iOS recordings report duration Infinity until a seek forces the

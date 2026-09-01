@@ -75,6 +75,18 @@ npm run check-pwa      # offline reload and the share-target endpoint, against d
 `npm run spikes -- --headed` shows the browser. Add `--with-transcription` to
 include the model download and a full speech-to-text run.
 
+## When a recording is refused
+
+Browsers report an unplayable recording as "media error 4" and nothing more.
+The app reads the container itself and says which codec the file actually uses,
+what this browser can decode, and what to do — with a copyable diagnostic block
+behind a Details toggle.
+
+The common case on phones is **HEVC (H.265)**: Android and iPhone recorders
+offer it as "high efficiency", and many browsers cannot decode it. Re-record
+with the H.264 or "more compatible" setting. The app cannot decode a codec the
+browser lacks; it can only tell you which one it is.
+
 ## Deploying
 
 `.github/workflows/pages.yml` typechecks, tests, builds, runs the PWA checks

@@ -11,6 +11,8 @@ import { downloadBlob } from "../export/download";
 import { canShareFile, shareFile, zipAsFile } from "../export/share";
 import { commitBundle, defaultBranchName, GithubError, verifyAccess } from "../export/github";
 import { runPipeline, type RunResult, type StageUpdate } from "../pipeline";
+import { VideoLoadError } from "../video/frames";
+import { diagnoseVideo, formatDiagnostics, type Diagnosis } from "../video/diagnose";
 import { defaultTitle } from "../bundle/manifest";
 import { DEFAULT_SETTINGS, MODELS, type Settings } from "../types";
 import { KEYS, del, get, set } from "../store";
@@ -120,6 +122,10 @@ export async function mount(root: HTMLElement): Promise<void> {
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {
         addNotice(notices, "warn", "Cancelled. Nothing was written.");
+      } else if (err instanceof VideoLoadError && file) {
+        // Say which codec the file actually uses, rather than repeating the
+        // browser's "media error 4".
+        addDiagnosis(notices, await diagnoseVideo(file, err.mediaError));
       } else {
         addNotice(notices, "error", err instanceof Error ? err.message : String(err));
       }
@@ -373,6 +379,51 @@ function renderResult(
       }
     });
   }
+}
+
+/** An error notice that also carries the evidence behind it. */
+function addDiagnosis(host: HTMLElement, diagnosis: Diagnosis): void {
+  const el = document.createElement("div");
+  el.className = "notice error";
+
+  const summary = document.createElement("p");
+  summary.style.margin = "0";
+  summary.textContent = diagnosis.summary;
+  el.appendChild(summary);
+
+  if (diagnosis.advice) {
+    const advice = document.createElement("p");
+    advice.style.margin = ".5rem 0 0";
+    advice.textContent = diagnosis.advice;
+    el.appendChild(advice);
+  }
+
+  const text = formatDiagnostics(diagnosis);
+  const details = document.createElement("details");
+  details.style.marginTop = ".5rem";
+  const label = document.createElement("summary");
+  label.textContent = "Details";
+  details.appendChild(label);
+  const pre = document.createElement("pre");
+  pre.textContent = text;
+  details.appendChild(pre);
+
+  const copy = document.createElement("button");
+  copy.type = "button";
+  copy.textContent = "Copy details";
+  copy.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      copy.textContent = "Copied";
+    } catch {
+      // Clipboard access can be refused; the text is on screen either way.
+      copy.textContent = "Select the text above to copy it";
+    }
+  });
+  details.appendChild(copy);
+
+  el.appendChild(details);
+  host.appendChild(el);
 }
 
 function addNotice(host: HTMLElement, kind: "warn" | "error", message: string): void {

@@ -226,6 +226,31 @@ What that does **not** cover is Android's half of the share contract: whether
 the OS actually offers the installed app in the share sheet for a video. That
 needs a phone.
 
+## When a browser refuses a recording
+
+A real Android phone rejected a 61 MB `.mp4` with `MEDIA_ERR_SRC_NOT_SUPPORTED`
+(media error 4), which is all a `<video>` element ever says. That is not enough
+for anyone to act on, so `src/video/probe.ts` reads the container directly —
+walking the boxes by their headers and reading only `moov`, so a 61 MB file
+costs a few kilobytes of reads — and `src/video/diagnose.ts` pairs what is
+inside the file with what the browser claims it can decode.
+
+The parser is checked against real muxer output in `tests/fixtures/` (a few
+kilobytes each, committed): H.264+AAC, HEVC+AAC, AV1+AAC, a file carrying a 90
+degree display matrix, and a WebM that must come back as "not an MP4".
+
+The end-to-end path is checked too, and honestly: Playwright's Chromium has no
+H.264 or HEVC decoder, so it refuses these files exactly as a phone without an
+HEVC decoder does, with the same error and no further detail. Both spikes pass:
+the HEVC file produces "This recording is HEVC (H.265), and this browser cannot
+decode it on this device" plus how to re-record in H.264, and the H.264 file
+produces a message about the browser rather than the recording.
+
+What this does **not** do is decode anything the browser cannot. If a real
+device reports HEVC, the only in-browser fix is a software decoder
+(ffmpeg.wasm, roughly 25-30 MB), and that is a decision to take with a real
+answer in hand rather than on a guess.
+
 ## Still to check on real devices
 
 Nothing below can be answered from CI. Fill in a row when a device says so.

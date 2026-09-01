@@ -1,5 +1,5 @@
 {
-  "ranAt": "2026-09-01T01:23:21.191Z",
+  "ranAt": "2026-09-01T02:20:29.659Z",
   "results": [
     {
       "name": "environment",
@@ -28,7 +28,7 @@
         "durationSec": 12,
         "peakAmplitude": 0.7263,
         "rms": 0.0811,
-        "elapsedMs": 93
+        "elapsedMs": 191
       }
     },
     {
@@ -48,9 +48,9 @@
         "entryCount": 40,
         "inputBytes": 40000000,
         "zipBytes": 40005382,
-        "elapsedMs": 170,
-        "heapBeforeBytes": 4465558,
-        "heapPeakBytes": 44709576,
+        "elapsedMs": 713,
+        "heapBeforeBytes": 4185073,
+        "heapPeakBytes": 44410643,
         "heapMeasured": true
       }
     },
@@ -130,18 +130,18 @@
       "detail": {
         "ok": true,
         "strategy": "playback",
-        "elapsedMs": 4542,
+        "elapsedMs": 4543,
         "detected": [
           {
             "timeSec": 3.1,
             "diffScore": 0.332
           },
           {
-            "timeSec": 6.133,
+            "timeSec": 6.033,
             "diffScore": 0.451
           },
           {
-            "timeSec": 9.367,
+            "timeSec": 9.067,
             "diffScore": 0.532
           }
         ],
@@ -153,15 +153,127 @@
           },
           {
             "expected": 6,
-            "nearest": 6.133,
-            "deltaSec": 0.133
+            "nearest": 6.033,
+            "deltaSec": 0.033
           },
           {
             "expected": 9,
-            "nearest": 9.367,
-            "deltaSec": 0.367
+            "nearest": 9.067,
+            "deltaSec": 0.067
           }
         ]
+      }
+    },
+    {
+      "name": "Diagnosis names HEVC when the browser refuses it",
+      "status": "pass",
+      "detail": {
+        "opened": false,
+        "fixture": "hevc-aac.mp4",
+        "summary": "This recording is HEVC (H.265), and this browser cannot decode it on this device.",
+        "advice": "Android and iPhone screen recorders can be set to record in H.264 instead: look for \"H.264\", \"More compatible\", or turn off \"High efficiency\" / HEVC in the recorder or camera settings, then record again. An existing HEVC file has to be converted before this app can read it.",
+        "details": {
+          "fileName": "hevc-aac.mp4",
+          "fileType": "video/mp4",
+          "fileSizeBytes": 5986,
+          "mediaErrorCode": 4,
+          "mediaErrorMessage": "DEMUXER_ERROR_NO_SUPPORTED_STREAMS: FFmpegDemuxer: no supported streams",
+          "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/141.0.0.0 Safari/537.36",
+          "canPlay": {
+            "video/mp4": "maybe",
+            "h264+aac": "no",
+            "hevc": "no",
+            "av1": "probably",
+            "webm vp8": "probably"
+          },
+          "container": {
+            "brands": [
+              "isom",
+              "isom",
+              "iso2",
+              "mp41"
+            ],
+            "topLevelBoxes": [
+              "ftyp",
+              "free",
+              "mdat",
+              "moov"
+            ],
+            "durationSec": 0.2,
+            "video": {
+              "fourcc": "hvc1",
+              "codec": "hvc1.1.4.L30.B0",
+              "codecApproximate": true,
+              "width": 64,
+              "height": 48,
+              "rotationDeg": 0
+            },
+            "audio": {
+              "fourcc": "mp4a",
+              "codec": "mp4a.40.2"
+            }
+          },
+          "canPlayExact": {
+            "codec": "hvc1.1.4.L30.B0",
+            "result": "no"
+          }
+        }
+      }
+    },
+    {
+      "name": "Diagnosis names H.264 when the browser refuses it",
+      "status": "pass",
+      "detail": {
+        "opened": false,
+        "fixture": "h264-aac.mp4",
+        "summary": "This recording is H.264, but this browser has no H.264 decoder.",
+        "advice": "That is unusual on a phone. Try the same file in Chrome or Safari; browser builds without the licensed codecs (some Linux and privacy-focused builds) cannot play ordinary screen recordings at all.",
+        "details": {
+          "fileName": "h264-aac.mp4",
+          "fileType": "video/mp4",
+          "fileSizeBytes": 4206,
+          "mediaErrorCode": 4,
+          "mediaErrorMessage": "DEMUXER_ERROR_NO_SUPPORTED_STREAMS: FFmpegDemuxer: no supported streams",
+          "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/141.0.0.0 Safari/537.36",
+          "canPlay": {
+            "video/mp4": "maybe",
+            "h264+aac": "no",
+            "hevc": "no",
+            "av1": "probably",
+            "webm vp8": "probably"
+          },
+          "container": {
+            "brands": [
+              "isom",
+              "isom",
+              "iso2",
+              "avc1",
+              "mp41"
+            ],
+            "topLevelBoxes": [
+              "ftyp",
+              "free",
+              "mdat",
+              "moov"
+            ],
+            "durationSec": 0.2,
+            "video": {
+              "fourcc": "avc1",
+              "codec": "avc1.42C00A",
+              "width": 64,
+              "height": 48,
+              "rotationDeg": 0
+            },
+            "audio": {
+              "fourcc": "mp4a",
+              "codec": "mp4a.40.2"
+            }
+          },
+          "canPlayExact": {
+            "codec": "avc1.42C00A",
+            "result": "no"
+          }
+        }
       }
     },
     {
@@ -170,7 +282,7 @@
       "detail": {
         "ok": true,
         "strategy": "seek",
-        "elapsedMs": 723,
+        "elapsedMs": 2282,
         "detected": [
           {
             "timeSec": 3,
@@ -209,11 +321,11 @@
       "status": "pass",
       "detail": {
         "ok": true,
-        "elapsedMs": 19773,
-        "folder": "repro-2026-09-01-0123",
+        "elapsedMs": 31779,
+        "folder": "repro-2026-09-01-0220",
         "frameCount": 9,
         "segmentCount": 0,
-        "zipBytes": 318579,
+        "zipBytes": 317789,
         "transcription": {
           "model": "none",
           "device": "none"
@@ -243,7 +355,7 @@
         ],
         "savedTo": "fixtures/spike-bundle.zip",
         "validation": {
-          "folder": "repro-2026-09-01-0123",
+          "folder": "repro-2026-09-01-0220",
           "frameCount": 9,
           "segmentCount": 0,
           "errors": [],

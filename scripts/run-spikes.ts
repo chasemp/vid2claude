@@ -17,6 +17,8 @@ import { validateBundle } from "./bundle-rules";
 import { findChromium } from "./browser";
 
 const FIXTURES = {
+  hevc: "/tests/fixtures/hevc-aac.mp4",
+  h264: "/tests/fixtures/h264-aac.mp4",
   mp4: "/fixtures/synthetic-portrait.mp4",
   webm: "/fixtures/synthetic-portrait.webm",
   rotated: "/fixtures/synthetic-rotated.mp4",
@@ -172,6 +174,33 @@ async function main(): Promise<void> {
     results.push(
       await attempt("Phase 3 scene changes match the fixture", () => call(page, "sceneChanges", [primary, FIXTURES.truth], 180_000), (value) =>
         (value as { ok: boolean }).ok ? "pass" : "fail",
+      ),
+    );
+
+    // A browser that cannot decode a file must say which codec it is, not
+    // "media error 4". This browser refuses H.264 and HEVC alike, so both
+    // paths are exercised for real.
+    results.push(
+      await attempt(
+        "Diagnosis names HEVC when the browser refuses it",
+        () => call(page, "diagnoseFixture", [FIXTURES.hevc]),
+        (value) => {
+          const d = value as { opened: boolean; summary?: string; details?: Record<string, unknown> };
+          if (d.opened) return "skip";
+          return d.summary?.includes("HEVC") ? "pass" : "fail";
+        },
+      ),
+    );
+
+    results.push(
+      await attempt(
+        "Diagnosis names H.264 when the browser refuses it",
+        () => call(page, "diagnoseFixture", [FIXTURES.h264]),
+        (value) => {
+          const d = value as { opened: boolean; summary?: string };
+          if (d.opened) return "skip";
+          return d.summary?.includes("H.264") ? "pass" : "fail";
+        },
       ),
     );
 

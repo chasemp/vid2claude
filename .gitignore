@@ -3,6 +3,8 @@ dist/
 dist-spikes/
 .DS_Store
 *.local
-fixtures/*
-!fixtures/README.md
+# Real recordings and generated media stay out of the repository; the tiny
+# container samples under tests/fixtures/ are committed on purpose.
+/fixtures/*
+!/fixtures/README.md
 public/ort/

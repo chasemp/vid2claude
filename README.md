@@ -93,6 +93,13 @@ under a project subpath such as `https://<user>.github.io/vid2claude/` without
 configuration. `npm run check-pwa` serves the built site under a subpath by
 default for exactly that reason.
 
+`public/.nojekyll` ships in the artifact so nothing is ever run through Jekyll,
+which would drop any path beginning with an underscore. The Actions deployment
+path does not run Jekyll at all, and no current asset starts with an
+underscore, so today the file changes nothing — it is there so that a future
+asset name, or a publishing source switched back to a branch, cannot silently
+delete files from the site.
+
 Two notes about Pages specifically:
 
 - It cannot send `Cross-Origin-Opener-Policy` / `Cross-Origin-Embedder-Policy`

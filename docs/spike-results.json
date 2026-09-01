@@ -1,5 +1,5 @@
 {
-  "ranAt": "2026-09-01T02:20:29.659Z",
+  "ranAt": "2026-09-01T03:04:49.302Z",
   "results": [
     {
       "name": "environment",
@@ -28,7 +28,7 @@
         "durationSec": 12,
         "peakAmplitude": 0.7263,
         "rms": 0.0811,
-        "elapsedMs": 191
+        "elapsedMs": 94
       }
     },
     {
@@ -48,9 +48,9 @@
         "entryCount": 40,
         "inputBytes": 40000000,
         "zipBytes": 40005382,
-        "elapsedMs": 713,
-        "heapBeforeBytes": 4185073,
-        "heapPeakBytes": 44410643,
+        "elapsedMs": 435,
+        "heapBeforeBytes": 4230897,
+        "heapPeakBytes": 44470107,
         "heapMeasured": true
       }
     },
@@ -79,6 +79,7 @@
       "detail": {
         "ok": true,
         "fixture": "synthetic-portrait.webm",
+        "failedFrames": 0,
         "reportedSize": {
           "width": 720,
           "height": 1280
@@ -130,36 +131,36 @@
       "detail": {
         "ok": true,
         "strategy": "playback",
-        "elapsedMs": 4543,
+        "elapsedMs": 6062,
         "detected": [
           {
-            "timeSec": 3.1,
+            "timeSec": 3.033,
             "diffScore": 0.332
           },
           {
-            "timeSec": 6.033,
+            "timeSec": 6.233,
             "diffScore": 0.451
           },
           {
-            "timeSec": 9.067,
+            "timeSec": 9.233,
             "diffScore": 0.532
           }
         ],
         "matched": [
           {
             "expected": 3,
-            "nearest": 3.1,
-            "deltaSec": 0.1
-          },
-          {
-            "expected": 6,
-            "nearest": 6.033,
+            "nearest": 3.033,
             "deltaSec": 0.033
           },
           {
+            "expected": 6,
+            "nearest": 6.233,
+            "deltaSec": 0.233
+          },
+          {
             "expected": 9,
-            "nearest": 9.067,
-            "deltaSec": 0.067
+            "nearest": 9.233,
+            "deltaSec": 0.233
           }
         ]
       }
@@ -173,6 +174,7 @@
         "summary": "This recording is HEVC (H.265), and this browser cannot decode it on this device.",
         "advice": "Android and iPhone screen recorders can be set to record in H.264 instead: look for \"H.264\", \"More compatible\", or turn off \"High efficiency\" / HEVC in the recorder or camera settings, then record again. An existing HEVC file has to be converted before this app can read it.",
         "details": {
+          "stage": "load",
           "fileName": "hevc-aac.mp4",
           "fileType": "video/mp4",
           "fileSizeBytes": 5986,
@@ -229,6 +231,7 @@
         "summary": "This recording is H.264, but this browser has no H.264 decoder.",
         "advice": "That is unusual on a phone. Try the same file in Chrome or Safari; browser builds without the licensed codecs (some Linux and privacy-focused builds) cannot play ordinary screen recordings at all.",
         "details": {
+          "stage": "load",
           "fileName": "h264-aac.mp4",
           "fileType": "video/mp4",
           "fileSizeBytes": 4206,
@@ -282,7 +285,7 @@
       "detail": {
         "ok": true,
         "strategy": "seek",
-        "elapsedMs": 2282,
+        "elapsedMs": 2036,
         "detected": [
           {
             "timeSec": 3,
@@ -317,15 +320,76 @@
       }
     },
     {
+      "name": "Real Android recording end to end",
+      "status": "pass",
+      "detail": {
+        "ok": true,
+        "elapsedMs": 81860,
+        "folder": "repro-2026-09-01-0304",
+        "frameCount": 24,
+        "segmentCount": 0,
+        "zipBytes": 10244385,
+        "transcription": {
+          "model": "none",
+          "device": "none"
+        },
+        "source": {
+          "filename": "real-android.webm",
+          "durationSec": 32.893,
+          "width": 960,
+          "height": 2142
+        },
+        "warnings": [],
+        "stages": [
+          "opening",
+          "scanning",
+          "capturing: 0 / 24 frames",
+          "capturing: 1 / 24 frames",
+          "capturing: 2 / 24 frames",
+          "capturing: 3 / 24 frames",
+          "capturing: 4 / 24 frames",
+          "capturing: 5 / 24 frames",
+          "capturing: 6 / 24 frames",
+          "capturing: 7 / 24 frames",
+          "capturing: 8 / 24 frames",
+          "capturing: 9 / 24 frames",
+          "capturing: 10 / 24 frames",
+          "capturing: 11 / 24 frames",
+          "capturing: 12 / 24 frames",
+          "capturing: 13 / 24 frames",
+          "capturing: 14 / 24 frames",
+          "capturing: 15 / 24 frames",
+          "capturing: 16 / 24 frames",
+          "capturing: 17 / 24 frames",
+          "capturing: 18 / 24 frames",
+          "capturing: 19 / 24 frames",
+          "capturing: 20 / 24 frames",
+          "capturing: 21 / 24 frames",
+          "capturing: 22 / 24 frames",
+          "capturing: 23 / 24 frames",
+          "capturing: 24 / 24 frames",
+          "zipping",
+          "done"
+        ],
+        "validation": {
+          "folder": "repro-2026-09-01-0304",
+          "frameCount": 24,
+          "segmentCount": 0,
+          "errors": [],
+          "warnings": []
+        }
+      }
+    },
+    {
       "name": "Phase 1 full run produces a valid bundle",
       "status": "pass",
       "detail": {
         "ok": true,
-        "elapsedMs": 31779,
-        "folder": "repro-2026-09-01-0220",
+        "elapsedMs": 24262,
+        "folder": "repro-2026-09-01-0304",
         "frameCount": 9,
         "segmentCount": 0,
-        "zipBytes": 317789,
+        "zipBytes": 319262,
         "transcription": {
           "model": "none",
           "device": "none"
@@ -355,7 +419,7 @@
         ],
         "savedTo": "fixtures/spike-bundle.zip",
         "validation": {
-          "folder": "repro-2026-09-01-0220",
+          "folder": "repro-2026-09-01-0304",
           "frameCount": 9,
           "segmentCount": 0,
           "errors": [],

@@ -11,7 +11,7 @@ import { downloadBlob } from "../export/download";
 import { canShareFile, shareFile, zipAsFile } from "../export/share";
 import { commitBundle, defaultBranchName, GithubError, verifyAccess } from "../export/github";
 import { runPipeline, type RunResult, type StageUpdate } from "../pipeline";
-import { VideoLoadError } from "../video/frames";
+import { VideoLoadError, VideoSeekError } from "../video/frames";
 import { diagnoseVideo, formatDiagnostics, type Diagnosis } from "../video/diagnose";
 import { defaultTitle } from "../bundle/manifest";
 import { DEFAULT_SETTINGS, MODELS, type Settings } from "../types";
@@ -126,6 +126,8 @@ export async function mount(root: HTMLElement): Promise<void> {
         // Say which codec the file actually uses, rather than repeating the
         // browser's "media error 4".
         addDiagnosis(notices, await diagnoseVideo(file, err.mediaError));
+      } else if (err instanceof VideoSeekError && file) {
+        addDiagnosis(notices, await diagnoseVideo(file, err.mediaError, "seek", err.context));
       } else {
         addNotice(notices, "error", err instanceof Error ? err.message : String(err));
       }
@@ -196,7 +198,15 @@ function template(settings: Settings): string {
         <label for="threshold">Scene-change threshold</label>
         <input type="number" id="threshold" min="0.01" max="1" step="0.01" value="${settings.sceneThreshold}" />
       </div>
+      <div>
+        <label for="max-edge">Frame size (longest edge, px)</label>
+        <input type="number" id="max-edge" min="320" max="1280" step="20" value="${settings.maxFrameEdge}" />
+      </div>
     </div>
+    <p class="muted">
+      Frames of a real phone screen are around 300 KB each at 1280 px. Lower this if a long
+      recording makes a bundle too big to commit comfortably.
+    </p>
 
     <div class="check">
       <input type="checkbox" id="include-ua" ${settings.includeUserAgent ? "checked" : ""} />
@@ -256,6 +266,7 @@ function bindSettings(root: HTMLElement, settings: Settings, save: () => void): 
   const interval = $<HTMLInputElement>("interval");
   const cap = $<HTMLInputElement>("cap");
   const threshold = $<HTMLInputElement>("threshold");
+  const maxEdge = $<HTMLInputElement>("max-edge");
   const includeUa = $<HTMLInputElement>("include-ua");
   const repo = $<HTMLInputElement>("repo");
   const branch = $<HTMLInputElement>("branch");
@@ -268,6 +279,10 @@ function bindSettings(root: HTMLElement, settings: Settings, save: () => void): 
   bind(interval, "change", () => (settings.frameIntervalSec = numberOr(interval.value, DEFAULT_SETTINGS.frameIntervalSec)));
   bind(cap, "change", () => (settings.frameCap = Math.max(2, Math.round(numberOr(cap.value, DEFAULT_SETTINGS.frameCap)))));
   bind(threshold, "change", () => (settings.sceneThreshold = numberOr(threshold.value, DEFAULT_SETTINGS.sceneThreshold)));
+  bind(maxEdge, "change", () => {
+    const value = Math.round(numberOr(maxEdge.value, DEFAULT_SETTINGS.maxFrameEdge));
+    settings.maxFrameEdge = Math.min(1280, Math.max(320, value));
+  });
   bind(includeUa, "change", () => (settings.includeUserAgent = includeUa.checked));
   bind(repo, "change", () => (settings.github.repo = repo.value.trim()));
   bind(branch, "change", () => (settings.github.branch = branch.value.trim()));

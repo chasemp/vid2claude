@@ -18,6 +18,14 @@ export interface VideoHandle {
   /** Display dimensions, i.e. rotation metadata already applied by the browser. */
   width: number;
   height: number;
+  /**
+   * Replaces the element with a fresh one on the same file.
+   *
+   * A media element that has hit an error keeps `error` set for good: every
+   * later seek fails immediately. Recovering from a decoder failure means
+   * starting a new element and a new decoder, not retrying on the old one.
+   */
+  reload(): Promise<void>;
   release(): void;
 }
 
@@ -28,17 +36,26 @@ export class VideoLoadError extends Error {
   }
 }
 
+/**
+ * A seek that ended in a media error. Carries the element's state, because
+ * "seek failed" on its own tells nobody anything — the same mistake the load
+ * path used to make.
+ */
+export class VideoSeekError extends Error {
+  constructor(
+    message: string,
+    readonly mediaError: MediaError | null,
+    readonly context: { timeSec: number; readyState: number; networkState: number },
+  ) {
+    super(message);
+    this.name = "VideoSeekError";
+  }
+}
+
 /** Loads a file into a hidden <video> and waits for metadata. */
 export async function openVideo(file: File | Blob): Promise<VideoHandle> {
-  const url = URL.createObjectURL(file);
-  const el = document.createElement("video");
-  el.preload = "auto";
-  el.muted = true;
-  el.playsInline = true;
-  // Safari will not decode frames for a video that was never in the document.
-  el.style.cssText = "position:fixed;left:-10000px;top:0;width:1px;height:1px;opacity:0";
-  document.body.appendChild(el);
-  el.src = url;
+  let url = URL.createObjectURL(file);
+  let el = createElement(url);
 
   try {
     await waitForMetadata(el);
@@ -58,12 +75,37 @@ export async function openVideo(file: File | Blob): Promise<VideoHandle> {
     durationSec = await probeDuration(el);
   }
 
-  return {
-    el,
-    url,
+  const handle: VideoHandle = {
+    get el() {
+      return el;
+    },
+    get url() {
+      return url;
+    },
     durationSec,
     width: el.videoWidth,
     height: el.videoHeight,
+    async reload() {
+      const previous = el;
+      const previousUrl = url;
+      url = URL.createObjectURL(file);
+      el = createElement(url);
+      try {
+        await waitForMetadata(el);
+      } catch (err) {
+        const mediaError = el.error;
+        el.remove();
+        URL.revokeObjectURL(url);
+        el = previous;
+        url = previousUrl;
+        throw new VideoLoadError(`Could not reopen the recording (${(err as Error).message}).`, mediaError);
+      }
+      previous.pause();
+      previous.removeAttribute("src");
+      previous.load();
+      previous.remove();
+      URL.revokeObjectURL(previousUrl);
+    },
     release() {
       el.pause();
       el.removeAttribute("src");
@@ -72,6 +114,19 @@ export async function openVideo(file: File | Blob): Promise<VideoHandle> {
       URL.revokeObjectURL(url);
     },
   };
+  return handle;
+}
+
+function createElement(url: string): HTMLVideoElement {
+  const el = document.createElement("video");
+  el.preload = "auto";
+  el.muted = true;
+  el.playsInline = true;
+  // Safari will not decode frames for a video that was never in the document.
+  el.style.cssText = "position:fixed;left:-10000px;top:0;width:1px;height:1px;opacity:0";
+  document.body.appendChild(el);
+  el.src = url;
+  return el;
 }
 
 function waitForMetadata(el: HTMLVideoElement): Promise<void> {
@@ -147,7 +202,15 @@ export function seek(el: HTMLVideoElement, t: number): Promise<void> {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
-      reject(new Error("seek failed"));
+      el.removeEventListener("seeked", onSeeked);
+      reject(
+        new VideoSeekError(
+          `The video decoder failed while seeking to ${target.toFixed(2)}s` +
+            (el.error ? ` (media error ${el.error.code})` : ""),
+          el.error,
+          { timeSec: target, readyState: el.readyState, networkState: el.networkState },
+        ),
+      );
     };
     // Guard against browsers that silently drop a seek near the end of file.
     const timer = setTimeout(finish, 3000);
@@ -207,30 +270,71 @@ export async function toPngBytes(canvas: HTMLCanvasElement): Promise<Uint8Array>
 }
 
 export interface CaptureOptions {
+  /** Longest edge of the encoded frame; defaults to MAX_EDGE_PX. */
+  maxEdge?: number;
   signal?: AbortSignal;
   onProgress?: (done: number, total: number) => void;
+  /** Reports a frame that could not be captured even after a fresh decoder. */
+  onFrameFailed?: (timeSec: number, error: Error) => void;
+}
+
+export interface CaptureResult {
+  /** Successful captures, keyed back to the index in the requested times. */
+  captured: { index: number; bytes: Uint8Array }[];
+  /** Indexes that could not be captured. */
+  failed: number[];
 }
 
 /**
  * Captures one PNG per requested timestamp, in time order.
- * Returns bytes in the same order as `times`.
+ *
+ * A phone's hardware decoder can fail partway through a long recording. One
+ * dead frame is not worth losing the whole bundle over, so a failure gets a
+ * fresh decoder and one retry, and a frame that still will not come back is
+ * skipped and reported.
  */
 export async function captureFrames(
   handle: VideoHandle,
   times: number[],
   opts: CaptureOptions = {},
-): Promise<Uint8Array[]> {
-  const { width, height } = fitSize(handle.width, handle.height);
+): Promise<CaptureResult> {
+  const { width, height } = fitSize(handle.width, handle.height, opts.maxEdge ?? MAX_EDGE_PX);
   const { canvas, ctx } = makeCanvas(width, height);
-  const out: Uint8Array[] = [];
+  const captured: { index: number; bytes: Uint8Array }[] = [];
+  const failed: number[] = [];
+
   for (let i = 0; i < times.length; i++) {
     if (opts.signal?.aborted) throw new DOMException("cancelled", "AbortError");
-    await seek(handle.el, clampTime(times[i]!, handle.durationSec));
-    ctx.drawImage(handle.el, 0, 0, width, height);
-    out.push(await toPngBytes(canvas));
+    const time = clampTime(times[i]!, handle.durationSec);
+    try {
+      captured.push({ index: i, bytes: await captureOne(handle, time, canvas, ctx, width, height) });
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") throw err;
+      try {
+        await handle.reload();
+        captured.push({ index: i, bytes: await captureOne(handle, time, canvas, ctx, width, height) });
+      } catch (retryError) {
+        failed.push(i);
+        opts.onFrameFailed?.(time, retryError instanceof Error ? retryError : new Error(String(retryError)));
+      }
+    }
     opts.onProgress?.(i + 1, times.length);
   }
-  return out;
+
+  return { captured, failed };
+}
+
+async function captureOne(
+  handle: VideoHandle,
+  timeSec: number,
+  canvas: HTMLCanvasElement,
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+): Promise<Uint8Array> {
+  await seek(handle.el, timeSec);
+  ctx.drawImage(handle.el, 0, 0, width, height);
+  return toPngBytes(canvas);
 }
 
 /** Keeps a requested time inside the decodable range of the file. */

@@ -86,6 +86,13 @@ export async function runPipeline(opts: RunOptions): Promise<RunResult> {
       threshold: settings.sceneThreshold,
       signal,
       onProgress: (fraction) => onStage({ stage: "scanning", fraction }),
+      onScanFallback: () =>
+        onStage({ stage: "scanning", detail: "fast scan failed, seeking instead" }),
+      onScanAbandoned: (err) =>
+        opts.onWarning?.(
+          `Screen-change detection stopped early (${err.message}). Frames come from the ` +
+            `narration and the fixed interval instead, so a change on a silent screen may be missing.`,
+        ),
     });
 
     let segments: Segment[] = [];
@@ -144,10 +151,11 @@ export async function runPipeline(opts: RunOptions): Promise<RunResult> {
     );
 
     onStage({ stage: "capturing", fraction: 0, detail: `0 / ${plan.length} frames` });
-    const pngs = await captureFrames(
+    const result = await captureFrames(
       handle,
       plan.map((frame) => frame.timeSec),
       {
+        maxEdge: settings.maxFrameEdge,
         signal,
         onProgress: (done, total) =>
           onStage({
@@ -158,9 +166,19 @@ export async function runPipeline(opts: RunOptions): Promise<RunResult> {
       },
     );
 
-    const captured: CapturedFrame[] = plan.map((frame, index) => ({
-      ...frame,
-      bytes: pngs[index]!,
+    if (result.failed.length > 0) {
+      opts.onWarning?.(
+        `${result.failed.length} of ${plan.length} frames could not be decoded and were left out ` +
+          `of the bundle. The rest are here, in order.`,
+      );
+    }
+    if (result.captured.length === 0) {
+      throw new Error("No frames could be captured from this recording.");
+    }
+
+    const captured: CapturedFrame[] = result.captured.map(({ index, bytes }) => ({
+      ...plan[index]!,
+      bytes,
     }));
 
     const folder = bundleFolderName();

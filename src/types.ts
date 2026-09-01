@@ -87,6 +87,8 @@ export interface Settings {
   frameIntervalSec: number;
   frameCap: number;
   sceneThreshold: number;
+  /** Longest edge of a captured frame, in pixels. */
+  maxFrameEdge: number;
   includeUserAgent: boolean;
   github: GithubSettings;
 }
@@ -119,7 +121,8 @@ export const DEFAULT_SETTINGS: Settings = {
   transcribe: true,
   frameIntervalSec: 2,
   frameCap: 120,
-  sceneThreshold: 0.15,
+  sceneThreshold: 0.05,
+  maxFrameEdge: 1280,
   includeUserAgent: true,
   github: { repo: "", branch: "", basePath: "repro/" },
 };

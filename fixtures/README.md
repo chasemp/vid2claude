@@ -31,6 +31,18 @@ with hand-checked transcripts for the first two. Put them here as
 a screen recording of a bug usually contains someone's account, messages or
 files, and none of that belongs in a public repository.
 
+## Real recordings and the spike harness
+
+Drop a real phone recording in as `real-android.mp4` (or `.webm`, if the
+harness browser has no H.264 decoder — `ffmpeg -i real-android.mp4 -c:v libvpx
+-vsync passthrough -c:a libopus real-android.webm` keeps the variable frame
+rate that makes a real recording different from the synthetic one). When
+`real-android.webm` is present, `npm run spikes` runs the whole pipeline
+against it and writes `real-bundle.zip` for inspection.
+
+Everything here except this file is gitignored, and that matters: a screen
+recording of a bug is a recording of someone's actual screen.
+
 ## Model mirror
 
 ```sh

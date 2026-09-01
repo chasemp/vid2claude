@@ -159,11 +159,11 @@ export async function a5Frames(url: string, truthUrl: string): Promise<unknown> 
     const expected = fitSize(handle.width, handle.height);
     // Sample the middle of each screen, above the burnt-in label.
     const times = truth.screens.map((screen) => screen.startSec + truth.holdSec / 2);
-    const pngs = await captureFrames(handle, times);
+    const { captured, failed } = await captureFrames(handle, times);
     const observed: { timeSec: number; expected: string; observed: string; matches: boolean }[] = [];
 
-    for (let i = 0; i < pngs.length; i++) {
-      const bitmap = await createImageBitmap(new Blob([pngs[i]! as BlobPart], { type: "image/png" }));
+    for (let i = 0; i < captured.length; i++) {
+      const bitmap = await createImageBitmap(new Blob([captured[i]!.bytes as BlobPart], { type: "image/png" }));
       const canvas = document.createElement("canvas");
       canvas.width = bitmap.width;
       canvas.height = bitmap.height;
@@ -192,8 +192,9 @@ export async function a5Frames(url: string, truthUrl: string): Promise<unknown> 
     }
 
     return {
-      ok: observed.every((o) => o.matches),
+      ok: observed.every((o) => o.matches) && failed.length === 0,
       fixture: file.name,
+      failedFrames: failed.length,
       reportedSize: { width: handle.width, height: handle.height },
       durationSec: Number(handle.durationSec.toFixed(3)),
       expectedDurationSec: truth.durationSec,
@@ -255,6 +256,23 @@ export async function sceneChanges(url: string, truthUrl: string, disableRvfc = 
   } finally {
     handle.release();
     if (disableRvfc && savedRvfc) proto.requestVideoFrameCallback = savedRvfc;
+  }
+}
+
+/** Every sampled frame difference, for calibrating the threshold on real video. */
+export async function sceneScores(url: string): Promise<unknown> {
+  const file = await fetchFile(url);
+  const handle = await openVideo(file);
+  try {
+    const samples: [number, number][] = [];
+    await detectSceneChanges(handle, {
+      threshold: 1.1, // emit nothing; this run is only here to collect scores
+      onSample: (timeSec, diffScore) =>
+        samples.push([Number(timeSec.toFixed(3)), Number(diffScore.toFixed(5))]),
+    });
+    return { fixture: file.name, durationSec: handle.durationSec, samples };
+  } finally {
+    handle.release();
   }
 }
 
@@ -346,6 +364,7 @@ window.spikes = {
   a5Frames,
   a5Rotation,
   sceneChanges,
+  sceneScores,
   diagnoseFixture,
   fullRun,
 } as unknown as Window["spikes"];

@@ -38,8 +38,17 @@ export function canPlay(mimeWithCodecs: string): string {
   return probe.canPlayType(mimeWithCodecs) || "no";
 }
 
-export async function diagnoseVideo(file: File, mediaError?: MediaError | null): Promise<Diagnosis> {
+export type FailureStage = "load" | "seek";
+
+export async function diagnoseVideo(
+  file: File,
+  mediaError?: MediaError | null,
+  stage: FailureStage = "load",
+  context?: Record<string, unknown>,
+): Promise<Diagnosis> {
   const details: Record<string, unknown> = {
+    stage,
+    ...(context ? { context } : {}),
     fileName: file.name,
     fileType: file.type || "(none)",
     fileSizeBytes: file.size,
@@ -85,6 +94,21 @@ export async function diagnoseVideo(file: File, mediaError?: MediaError | null):
   const name = CODEC_NAMES[fourcc] ?? fourcc;
   const exact = codec ? canPlay(`video/mp4; codecs="${codec}"`) : "";
   details.canPlayExact = { codec, result: exact || "no" };
+
+  if (stage === "seek") {
+    // The file loaded, so the container and codec are fine; the decoder gave
+    // up partway through, which on a phone usually means it ran out of room.
+    return {
+      summary:
+        `This device's video decoder gave up partway through the recording ` +
+        `(${name}, ${probe.video.width}x${probe.video.height}).`,
+      advice:
+        "Close other apps and try again, or use a shorter or lower-resolution recording. " +
+        "The app now retries with a fresh decoder and skips any frame it still cannot read, " +
+        "so a bundle usually still comes out.",
+      details,
+    };
+  }
 
   if (HEVC_FOURCCS.has(fourcc)) {
     return {

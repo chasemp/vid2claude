@@ -24,9 +24,17 @@ import {
 export const SAMPLE_FPS = 4;
 export const SAMPLE_WIDTH = 160;
 export const MIN_GAP_SEC = 0.75;
-export const DEFAULT_THRESHOLD = 0.15;
+/**
+ * Measured, not guessed. On a real 33 s Android screen recording the mean
+ * absolute frame difference has a median of 0.009 and a maximum of 0.17: a
+ * screen transition in a phone UI moves the average pixel far less than a
+ * full-frame colour change does. 0.05 sits between that recording's 75th
+ * percentile (0.043) and 90th (0.08), and picks out roughly one change every
+ * four seconds. See docs/spikes.md.
+ */
+export const DEFAULT_THRESHOLD = 0.05;
 /** Muted fast-forward rate for the scan pass. Browsers cap around 16x. */
-export const SCAN_RATE = 8;
+export const SCAN_RATE = 4;
 /** How long the scan waits for the next decoded frame before giving up. */
 export const STALL_TIMEOUT_MS = 10_000;
 
@@ -79,6 +87,13 @@ export interface ScanOptions {
   threshold?: number;
   signal?: AbortSignal;
   onProgress?: (fraction: number) => void;
+  /** The fast path failed; scanning continues by seeking. */
+  onScanFallback?: (error: Error) => void;
+  /** Both paths failed; the bundle goes on without scene-change frames. */
+  onScanAbandoned?: (error: Error) => void;
+  /** Every sampled difference, whether or not it crossed the threshold.
+   *  Used to calibrate the threshold against real recordings. */
+  onSample?: (timeSec: number, diffScore: number) => void;
 }
 
 /**
@@ -99,7 +114,11 @@ export async function detectSceneChanges(
     lastSampled = timeSec;
     ctx.drawImage(handle.el, 0, 0, size.width, size.height);
     const data = ctx.getImageData(0, 0, size.width, size.height).data;
-    if (previous) detector.push(timeSec, meanAbsDiff(previous, data));
+    if (previous) {
+      const score = meanAbsDiff(previous, data);
+      opts.onSample?.(timeSec, score);
+      detector.push(timeSec, score);
+    }
     previous = data;
     opts.onProgress?.(handle.durationSec > 0 ? timeSec / handle.durationSec : 0);
   };
@@ -109,9 +128,24 @@ export async function detectSceneChanges(
       await scanByPlayback(handle, sample, opts.signal);
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") throw err;
-      // Autoplay policy can refuse play() even on a muted element. Seeking is
-      // slower but needs no playback permission.
-      await scanBySeeking(handle, sample, opts.signal);
+      // Two things land here: an autoplay policy refusing play() even on a
+      // muted element, and a decoder that gave up partway. Both leave the
+      // element unusable, so take a fresh one before seeking through the file.
+      opts.onScanFallback?.(err instanceof Error ? err : new Error(String(err)));
+      previous = null;
+      try {
+        await handle.reload();
+        await scanBySeeking(handle, sample, opts.signal);
+      } catch (fallbackError) {
+        if (fallbackError instanceof DOMException && fallbackError.name === "AbortError") throw fallbackError;
+        // Screen-change detection is an enhancement: narration and interval
+        // frames still make a usable bundle, so keep what was detected and
+        // let the caller tell the user what was lost.
+        opts.onScanAbandoned?.(
+          fallbackError instanceof Error ? fallbackError : new Error(String(fallbackError)),
+        );
+        await handle.reload().catch(() => undefined);
+      }
     }
   } else {
     await scanBySeeking(handle, sample, opts.signal);
@@ -149,6 +183,18 @@ async function scanByPlayback(
         cleanup();
         resolve();
       };
+      // A decoder that fails partway is not a video that ended: the element is
+      // dead from here on, and treating it as a clean finish means every later
+      // seek fails with no explanation.
+      const onError = () => {
+        cleanup();
+        reject(
+          new Error(
+            `The video decoder failed during the scan pass` +
+              (el.error ? ` (media error ${el.error.code})` : ""),
+          ),
+        );
+      };
       const onAbort = () => {
         cleanup();
         reject(new DOMException("cancelled", "AbortError"));
@@ -156,11 +202,11 @@ async function scanByPlayback(
       const cleanup = () => {
         clearInterval(watchdog);
         el.removeEventListener("ended", onEnd);
-        el.removeEventListener("error", onEnd);
+        el.removeEventListener("error", onError);
         signal?.removeEventListener("abort", onAbort);
       };
       el.addEventListener("ended", onEnd, { once: true });
-      el.addEventListener("error", onEnd, { once: true });
+      el.addEventListener("error", onError, { once: true });
       if (signal?.aborted) onAbort();
       else signal?.addEventListener("abort", onAbort, { once: true });
     });

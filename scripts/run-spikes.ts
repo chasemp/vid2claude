@@ -212,6 +212,32 @@ async function main(): Promise<void> {
       ),
     );
 
+    // A real phone recording, when one has been dropped into fixtures/: real
+    // resolution, real variable frame rate, real length. The synthetic fixture
+    // is regular in every way a real recording is not.
+    if (existsSync("fixtures/real-android.webm")) {
+      results.push(
+        await attempt(
+          "Real Android recording end to end",
+          async () => {
+            const run = (await call(
+              page,
+              "fullRun",
+              ["/fixtures/real-android.webm", { transcribe: false }],
+              600_000,
+            )) as { zipBase64: string; [key: string]: unknown };
+            const { zipBase64, ...rest } = run;
+            writeFileSync("fixtures/real-bundle.zip", Buffer.from(zipBase64, "base64"));
+            return { ...rest, validation: validateBundle({ files: unzipToMap(zipBase64) }) };
+          },
+          (value) => {
+            const d = value as { validation: { errors: string[] }; warnings: string[] };
+            return d.validation.errors.length === 0 ? "pass" : "fail";
+          },
+        ),
+      );
+    }
+
     results.push(
       await attempt(
         "Phase 1 full run produces a valid bundle",

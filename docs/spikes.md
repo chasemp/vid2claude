@@ -251,6 +251,80 @@ device reports HEVC, the only in-browser fix is a software decoder
 (ffmpeg.wasm, roughly 25-30 MB), and that is a decision to take with a real
 answer in hand rather than on a guess.
 
+## What a real recording changed
+
+A 33 second Android screen recording (960x2142, H.264 High, **variable frame
+rate**: frame gaps from 3.4 ms to 1.0 s, 46 keyframes up to 7.3 s apart) was
+run through the pipeline. Two defaults turned out to be calibrated against the
+synthetic fixture rather than against reality, and one crash turned out to be
+this project's own bug.
+
+### The scan swallowed decoder failures
+
+The phone reported `seek failed` after the file had loaded fine. The cause was
+in `scanByPlayback`: a media error during the fast scan pass was registered on
+the same handler as `ended`, so a decoder that gave up mid-scan looked like a
+video that had finished. The element keeps `error` set for good after that, so
+every later seek failed instantly with nothing useful to say.
+
+Fixed three ways: a media error during the scan now rejects instead of
+resolving; `VideoHandle.reload()` builds a fresh element and decoder, because a
+failed element can never be recovered; and the resilience ladder is now scan by
+playback, then scan by seeking on a fresh decoder, then give up on scene
+changes and still produce a bundle from narration and interval frames. Frame
+capture does the same: a failed frame gets a fresh decoder and one retry, then
+is skipped and reported rather than killing the run.
+
+### The scene-change threshold was calibrated to a fake
+
+The synthetic fixture changes the whole frame from one flat colour to another,
+which scores 0.33. A real phone UI does not. Sampling every frame difference
+across the real recording:
+
+| | |
+| --- | --- |
+| median | 0.0089 |
+| 75th percentile | 0.043 |
+| 90th percentile | 0.080 |
+| maximum | 0.171 |
+
+At the old default of 0.15, **one** scene change was detected in 33 seconds of
+someone tapping through an app. Modelled against the same samples, with the
+0.75 s minimum gap applied:
+
+| Threshold | Scene frames in 33 s |
+| --- | --- |
+| 0.15 (old) | 1 |
+| 0.08 | 5 |
+| 0.05 (new default) | 8 |
+| 0.04 | 10 |
+| 0.03 | 12 |
+
+0.05 sits between that recording's 75th and 90th percentiles and picks out
+roughly one change every four seconds. It is a setting, and one recording is
+one recording, but a measured default beats a default measured against nothing.
+
+The metric itself is still mean absolute difference over the whole frame, which
+dilutes a change confined to part of the screen: a dialog covering a third of a
+bright screen moves the average pixel very little. A changed-pixel ratio would
+suit screen recordings better, and that is worth trying against a recording
+where the taps are known.
+
+### Frames of real content are much bigger than the plan assumed
+
+Flat synthetic colours compress to nothing; a real phone screen does not. At
+the 1280 px rule, frames of this recording were **98 KB to 783 KB, median
+316 KB** (574x1280 after downscaling from 960x2142).
+
+That puts a full 120-frame bundle at roughly **53 MB**, against the plan's
+"under 15 MB" acceptance target. The 33 second recording produced 19 frames and
+8.5 MB, so ordinary bundles are fine; long ones are not. Longest edge is now a
+setting (default 1280, the plan's value) rather than a constant, since dropping
+it to 900 px cuts a frame to about half its bytes at some cost in legible text.
+Changing the frame format is the other lever and is deliberately not taken:
+PNG is the one image format Anthropic's own documentation confirms for Claude
+Code, and legible text is the whole point of the frames.
+
 ## Still to check on real devices
 
 Nothing below can be answered from CI. Fill in a row when a device says so.

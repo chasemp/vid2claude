@@ -8,13 +8,20 @@ Choices the plan left open, what the app does today, and how to change it.
 | --- | --- | --- |
 | Frame interval | **2 s** | Settings, `frameIntervalSec` |
 | Frame cap | **120** | Settings, `frameCap` |
-| Scene-change threshold | **0.15**, minimum 0.75 s apart | Settings, `sceneThreshold`; `src/video/scene-change.ts` |
+| Scene-change threshold | **0.05**, minimum 0.75 s apart | Settings, `sceneThreshold`; `src/video/scene-change.ts` |
+| Frame longest edge | **1280 px** | Settings, `maxFrameEdge` |
 | Minimum spacing between kept frames | **0.4 s** | `MIN_SPACING_SEC` in `src/bundle/align.ts` |
 | Default speech model | **whisper-tiny.en** | Settings, `model` |
 
 These are the plan's proposals, shipped as defaults and exposed in the settings
 panel, so a user with a long or a visually busy recording can change them
 without a rebuild.
+
+The scene-change threshold is the one number that did **not** survive contact
+with a real recording: the plan proposed 0.15, which detects one change in 33
+seconds of real phone UI, because the synthetic fixture's full-frame colour
+swaps score twice what a real screen transition does. 0.05 is measured from the
+real recording's own distribution; see [spikes.md](spikes.md).
 
 ## User agent in README.md
 

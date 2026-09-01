@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>vid2claude — screen recording to repro bundle</title>
+    <meta
+      name="description"
+      content="Turn a screen recording into a repository-ready reproduction bundle for Claude Code. Runs entirely on your device."
+    />
+    <meta name="theme-color" content="#2f6feb" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+  </head>
+  <body>
+    <main id="app">
+      <h1>vid2claude</h1>
+      <p class="lede">
+        Hand it a screen recording. Get back a ZIP of narration and screenshots that Claude Code can
+        read. Nothing is uploaded; the video never leaves this device.
+      </p>
+      <noscript>This app needs JavaScript, because all the processing happens in your browser.</noscript>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

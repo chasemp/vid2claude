@@ -1,0 +1,262 @@
+{
+  "ranAt": "2026-09-01T01:23:21.191Z",
+  "results": [
+    {
+      "name": "environment",
+      "status": "pass",
+      "detail": {
+        "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/141.0.0.0 Safari/537.36",
+        "codecs": {
+          "video/mp4; codecs=avc1.42E01E,mp4a.40.2": "",
+          "video/mp4": "maybe",
+          "video/quicktime": "",
+          "video/webm; codecs=vp8,opus": "probably",
+          "webgpu": "available",
+          "webCodecs": "available"
+        },
+        "fixtureUsed": "/fixtures/synthetic-portrait.webm"
+      }
+    },
+    {
+      "name": "A1 decodeAudioData -> 16 kHz mono",
+      "status": "pass",
+      "detail": {
+        "ok": true,
+        "fixture": "synthetic-portrait.webm",
+        "samples": 192000,
+        "sampleRate": 16000,
+        "durationSec": 12,
+        "peakAmplitude": 0.7263,
+        "rms": 0.0811,
+        "elapsedMs": 93
+      }
+    },
+    {
+      "name": "A2 Web Share with files",
+      "status": "skip",
+      "detail": {
+        "hasShare": false,
+        "hasCanShare": false,
+        "canShareZip": false
+      }
+    },
+    {
+      "name": "A3 streaming ZIP of 40 MB",
+      "status": "pass",
+      "detail": {
+        "ok": true,
+        "entryCount": 40,
+        "inputBytes": 40000000,
+        "zipBytes": 40005382,
+        "elapsedMs": 170,
+        "heapBeforeBytes": 4465558,
+        "heapPeakBytes": 44709576,
+        "heapMeasured": true
+      }
+    },
+    {
+      "name": "A4 GitHub API from a browser",
+      "status": "skip",
+      "detail": {
+        "origin": "http://localhost:5199",
+        "simpleGet": {
+          "ok": false,
+          "error": "TypeError: Failed to fetch"
+        },
+        "preflightedPost": {
+          "reachedServer": false,
+          "error": "TypeError: Failed to fetch"
+        },
+        "tlsInterception": [
+          "net::ERR_CERT_AUTHORITY_INVALID https://api.github.com/repos/chasemp/vid2claude",
+          "net::ERR_CERT_AUTHORITY_INVALID https://api.github.com/repos/chasemp/vid2claude/git/blobs"
+        ]
+      }
+    },
+    {
+      "name": "A5 seek and capture the right frames",
+      "status": "pass",
+      "detail": {
+        "ok": true,
+        "fixture": "synthetic-portrait.webm",
+        "reportedSize": {
+          "width": 720,
+          "height": 1280
+        },
+        "durationSec": 12.008,
+        "expectedDurationSec": 12,
+        "frameSize": {
+          "width": 720,
+          "height": 1280
+        },
+        "frames": [
+          {
+            "timeSec": 1.5,
+            "expected": "1d3557",
+            "observed": "1b3556",
+            "matches": true
+          },
+          {
+            "timeSec": 4.5,
+            "expected": "e63946",
+            "observed": "f54b47",
+            "matches": true
+          },
+          {
+            "timeSec": 7.5,
+            "expected": "f1faee",
+            "observed": "f0f8ee",
+            "matches": true
+          },
+          {
+            "timeSec": 10.5,
+            "expected": "2a9d8f",
+            "observed": "1f918f",
+            "matches": true
+          }
+        ]
+      }
+    },
+    {
+      "name": "A5b rotation metadata applied",
+      "status": "skip",
+      "detail": {
+        "reason": "no H.264 in this browser build"
+      }
+    },
+    {
+      "name": "Phase 3 scene changes match the fixture",
+      "status": "pass",
+      "detail": {
+        "ok": true,
+        "strategy": "playback",
+        "elapsedMs": 4542,
+        "detected": [
+          {
+            "timeSec": 3.1,
+            "diffScore": 0.332
+          },
+          {
+            "timeSec": 6.133,
+            "diffScore": 0.451
+          },
+          {
+            "timeSec": 9.367,
+            "diffScore": 0.532
+          }
+        ],
+        "matched": [
+          {
+            "expected": 3,
+            "nearest": 3.1,
+            "deltaSec": 0.1
+          },
+          {
+            "expected": 6,
+            "nearest": 6.133,
+            "deltaSec": 0.133
+          },
+          {
+            "expected": 9,
+            "nearest": 9.367,
+            "deltaSec": 0.367
+          }
+        ]
+      }
+    },
+    {
+      "name": "Phase 3 scene changes without requestVideoFrameCallback",
+      "status": "pass",
+      "detail": {
+        "ok": true,
+        "strategy": "seek",
+        "elapsedMs": 723,
+        "detected": [
+          {
+            "timeSec": 3,
+            "diffScore": 0.332
+          },
+          {
+            "timeSec": 6,
+            "diffScore": 0.451
+          },
+          {
+            "timeSec": 9,
+            "diffScore": 0.532
+          }
+        ],
+        "matched": [
+          {
+            "expected": 3,
+            "nearest": 3,
+            "deltaSec": 0
+          },
+          {
+            "expected": 6,
+            "nearest": 6,
+            "deltaSec": 0
+          },
+          {
+            "expected": 9,
+            "nearest": 9,
+            "deltaSec": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "Phase 1 full run produces a valid bundle",
+      "status": "pass",
+      "detail": {
+        "ok": true,
+        "elapsedMs": 19773,
+        "folder": "repro-2026-09-01-0123",
+        "frameCount": 9,
+        "segmentCount": 0,
+        "zipBytes": 318579,
+        "transcription": {
+          "model": "none",
+          "device": "none"
+        },
+        "source": {
+          "filename": "synthetic-portrait.webm",
+          "durationSec": 12.008,
+          "width": 720,
+          "height": 1280
+        },
+        "warnings": [],
+        "stages": [
+          "opening",
+          "scanning",
+          "capturing: 0 / 9 frames",
+          "capturing: 1 / 9 frames",
+          "capturing: 2 / 9 frames",
+          "capturing: 3 / 9 frames",
+          "capturing: 4 / 9 frames",
+          "capturing: 5 / 9 frames",
+          "capturing: 6 / 9 frames",
+          "capturing: 7 / 9 frames",
+          "capturing: 8 / 9 frames",
+          "capturing: 9 / 9 frames",
+          "zipping",
+          "done"
+        ],
+        "savedTo": "fixtures/spike-bundle.zip",
+        "validation": {
+          "folder": "repro-2026-09-01-0123",
+          "frameCount": 9,
+          "segmentCount": 0,
+          "errors": [],
+          "warnings": []
+        }
+      }
+    },
+    {
+      "name": "Phase 2 transcription end to end",
+      "status": "skip",
+      "detail": {
+        "reason": "pass --with-transcription to download the model and run it"
+      }
+    }
+  ]
+}

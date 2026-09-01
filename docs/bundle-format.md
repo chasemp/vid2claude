@@ -95,6 +95,13 @@ was transcribed the file says so in one italic line rather than being empty.
 PNG, longest edge at most 1280 px, never upscaled, rotation applied. Four-digit
 zero-padded names starting at `0001`.
 
+## `debug.log` (optional)
+
+Present only when the user turned on "include the run log in the bundle". A
+plain-text log of the run: container details, this device's decoding support,
+stage timings, and any frame that failed. Readers should ignore it; it is there
+so a bug report can travel with the bundle. Credentials are scrubbed from it.
+
 ## Guarantees a reader can rely on
 
 - Every file listed in `manifest.json` exists, and every PNG in the folder is

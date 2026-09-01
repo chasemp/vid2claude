@@ -1,5 +1,5 @@
 {
-  "ranAt": "2026-09-01T03:04:49.302Z",
+  "ranAt": "2026-09-01T03:16:00.504Z",
   "results": [
     {
       "name": "environment",
@@ -28,7 +28,7 @@
         "durationSec": 12,
         "peakAmplitude": 0.7263,
         "rms": 0.0811,
-        "elapsedMs": 94
+        "elapsedMs": 150
       }
     },
     {
@@ -48,9 +48,9 @@
         "entryCount": 40,
         "inputBytes": 40000000,
         "zipBytes": 40005382,
-        "elapsedMs": 435,
-        "heapBeforeBytes": 4230897,
-        "heapPeakBytes": 44470107,
+        "elapsedMs": 398,
+        "heapBeforeBytes": 4417497,
+        "heapPeakBytes": 44666219,
         "heapMeasured": true
       }
     },
@@ -134,33 +134,33 @@
         "elapsedMs": 6062,
         "detected": [
           {
-            "timeSec": 3.033,
+            "timeSec": 3.2,
             "diffScore": 0.332
           },
           {
-            "timeSec": 6.233,
+            "timeSec": 6.133,
             "diffScore": 0.451
           },
           {
-            "timeSec": 9.233,
+            "timeSec": 9.2,
             "diffScore": 0.532
           }
         ],
         "matched": [
           {
             "expected": 3,
-            "nearest": 3.033,
-            "deltaSec": 0.033
+            "nearest": 3.2,
+            "deltaSec": 0.2
           },
           {
             "expected": 6,
-            "nearest": 6.233,
-            "deltaSec": 0.233
+            "nearest": 6.133,
+            "deltaSec": 0.133
           },
           {
             "expected": 9,
-            "nearest": 9.233,
-            "deltaSec": 0.233
+            "nearest": 9.2,
+            "deltaSec": 0.2
           }
         ]
       }
@@ -280,12 +280,201 @@
       }
     },
     {
+      "name": "Analyse reports a playable recording",
+      "status": "pass",
+      "detail": {
+        "report": {
+          "file": {
+            "name": "synthetic-portrait.webm",
+            "type": "video/webm",
+            "sizeBytes": 1078922
+          },
+          "browser": {
+            "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/141.0.0.0 Safari/537.36",
+            "canPlay": {
+              "video/mp4": "maybe",
+              "h264+aac": "no",
+              "h264 high": "no",
+              "hevc": "no",
+              "av1": "probably",
+              "webm vp8": "probably",
+              "webm vp9": "probably"
+            },
+            "webgpu": true,
+            "webCodecs": true
+          },
+          "container": null,
+          "seeks": [
+            {
+              "timeSec": 0,
+              "ok": true,
+              "elapsedMs": 3013,
+              "meanLuma": 0.2158
+            },
+            {
+              "timeSec": 3.002,
+              "ok": true,
+              "elapsedMs": 3008,
+              "meanLuma": 0.5089
+            },
+            {
+              "timeSec": 6.004,
+              "ok": true,
+              "elapsedMs": 3007,
+              "meanLuma": 0.9458
+            },
+            {
+              "timeSec": 9.006,
+              "ok": true,
+              "elapsedMs": 3007,
+              "meanLuma": 0.4147
+            },
+            {
+              "timeSec": 11.958,
+              "ok": true,
+              "elapsedMs": 17,
+              "meanLuma": 0.4147
+            }
+          ],
+          "verdict": "This recording looks processable: it loads, seeks across its whole length, and decodes audio.",
+          "element": {
+            "reportedWidth": 720,
+            "reportedHeight": 1280,
+            "durationSec": 12.008
+          },
+          "audio": {
+            "ok": true,
+            "samples": 192000,
+            "durationSec": 12,
+            "peak": 0.7263,
+            "elapsedMs": 53
+          }
+        },
+        "logText": "   0.000s INFO  analyse: Analysing file {\"name\":\"synthetic-portrait.webm\",\"type\":\"video/webm\",\"sizeBytes\":1078922}\n   0.001s INFO  analyse: Browser decoding support {\"video/mp4\":\"maybe\",\"h264+aac\":\"no\",\"h264 high\":\"no\",\"hevc\":\"no\",\"av1\":\"probably\",\"webm vp8\":\"probably\",\"webm vp9\":\"probably\"}\n   0.002s INFO  analyse: Container {\"note\":\"not an ISO base media file\"}\n   0.008s INFO  analyse: Video element loaded {\"elapsedMs\":6,\"width\":720,\"height\":1280,\"durationSec\":12.008}\n   3.021s DEBUG analyse: Seek probe {\"timeSec\":0,\"ok\":true,\"elapsedMs\":3013,\"meanLuma\":0.2158}\n   6.029s DEBUG analyse: Seek probe {\"timeSec\":3.002,\"ok\":true,\"elapsedMs\":3008,\"meanLuma\":0.5089}\n   9.037s DEBUG analyse: Seek probe {\"timeSec\":6.004,\"ok\":true,\"elapsedMs\":3007,\"meanLuma\":0.9458}\n  12.044s DEBUG analyse: Seek probe {\"timeSec\":9.006,\"ok\":true,\"elapsedMs\":3007,\"meanLuma\":0.4147}\n  12.061s DEBUG analyse: Seek probe {\"timeSec\":11.958,\"ok\":true,\"elapsedMs\":17,\"meanLuma\":0.4147}\n  12.116s INFO  analyse: Audio decoded {\"ok\":true,\"samples\":192000,\"durationSec\":12,\"peak\":0.7263,\"elapsedMs\":53}\n  12.116s INFO  analyse: Verdict {\"verdict\":\"This recording looks processable: it loads, seeks across its whole length, and decodes audio.\"}\n",
+        "logEntries": 11
+      }
+    },
+    {
+      "name": "Analyse explains a refused recording without the file",
+      "status": "pass",
+      "detail": {
+        "report": {
+          "file": {
+            "name": "hevc-aac.mp4",
+            "type": "video/mp4",
+            "sizeBytes": 5986
+          },
+          "browser": {
+            "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/141.0.0.0 Safari/537.36",
+            "canPlay": {
+              "video/mp4": "maybe",
+              "h264+aac": "no",
+              "h264 high": "no",
+              "hevc": "no",
+              "av1": "probably",
+              "webm vp8": "probably",
+              "webm vp9": "probably"
+            },
+            "webgpu": true,
+            "webCodecs": true
+          },
+          "container": {
+            "brands": [
+              "isom",
+              "isom",
+              "iso2",
+              "mp41"
+            ],
+            "topLevelBoxes": [
+              "ftyp",
+              "free",
+              "mdat",
+              "moov"
+            ],
+            "durationSec": 0.2,
+            "video": {
+              "fourcc": "hvc1",
+              "codec": "hvc1.1.4.L30.B0",
+              "codecApproximate": true,
+              "width": 64,
+              "height": 48,
+              "rotationDeg": 0
+            },
+            "audio": {
+              "fourcc": "mp4a",
+              "codec": "mp4a.40.2"
+            }
+          },
+          "seeks": [],
+          "verdict": "This recording is HEVC (H.265), and this browser cannot decode it on this device.",
+          "diagnosis": {
+            "summary": "This recording is HEVC (H.265), and this browser cannot decode it on this device.",
+            "advice": "Android and iPhone screen recorders can be set to record in H.264 instead: look for \"H.264\", \"More compatible\", or turn off \"High efficiency\" / HEVC in the recorder or camera settings, then record again. An existing HEVC file has to be converted before this app can read it.",
+            "details": {
+              "stage": "load",
+              "fileName": "hevc-aac.mp4",
+              "fileType": "video/mp4",
+              "fileSizeBytes": 5986,
+              "mediaErrorCode": 4,
+              "mediaErrorMessage": "DEMUXER_ERROR_NO_SUPPORTED_STREAMS: FFmpegDemuxer: no supported streams",
+              "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/141.0.0.0 Safari/537.36",
+              "canPlay": {
+                "video/mp4": "maybe",
+                "h264+aac": "no",
+                "hevc": "no",
+                "av1": "probably",
+                "webm vp8": "probably"
+              },
+              "container": {
+                "brands": [
+                  "isom",
+                  "isom",
+                  "iso2",
+                  "mp41"
+                ],
+                "topLevelBoxes": [
+                  "ftyp",
+                  "free",
+                  "mdat",
+                  "moov"
+                ],
+                "durationSec": 0.2,
+                "video": {
+                  "fourcc": "hvc1",
+                  "codec": "hvc1.1.4.L30.B0",
+                  "codecApproximate": true,
+                  "width": 64,
+                  "height": 48,
+                  "rotationDeg": 0
+                },
+                "audio": {
+                  "fourcc": "mp4a",
+                  "codec": "mp4a.40.2"
+                }
+              },
+              "canPlayExact": {
+                "codec": "hvc1.1.4.L30.B0",
+                "result": "no"
+              }
+            }
+          },
+          "audio": {
+            "ok": false,
+            "elapsedMs": 1,
+            "error": "This browser could not decode the audio track of the recording."
+          }
+        },
+        "logText": "   0.000s INFO  analyse: Analysing file {\"name\":\"hevc-aac.mp4\",\"type\":\"video/mp4\",\"sizeBytes\":5986}\n   0.000s INFO  analyse: Browser decoding support {\"video/mp4\":\"maybe\",\"h264+aac\":\"no\",\"h264 high\":\"no\",\"hevc\":\"no\",\"av1\":\"probably\",\"webm vp8\":\"probably\",\"webm vp9\":\"probably\"}\n   0.004s INFO  analyse: Container {\"brands\":[\"isom\",\"isom\",\"iso2\",\"mp41\"],\"topLevelBoxes\":[\"ftyp\",\"free\",\"mdat\",\"moov\"],\"durationSec\":0.2,\"video\":{\"fourcc\":\"hvc1\",\"codec\":\"hvc1.1.4.L30.B0\",\"codecApproximate\":true,\"width\":64,\"height\":48,\"rotationDeg\":0},\"audio\":{\"fourcc\":\"mp4a\",\"codec\":\"mp4a.40.2\"}}\n   0.009s ERROR analyse: Could not open the recording {\"errorName\":\"VideoLoadError\",\"errorMessage\":\"Could not read this file as video (media error 4).\",\"mediaErrorCode\":4}\n   0.011s INFO  analyse: Diagnosis {\"summary\":\"This recording is HEVC (H.265), and this browser cannot decode it on this device.\"}\n   0.013s ERROR analyse: Audio could not be decoded {\"errorName\":\"AudioDecodeError\",\"errorMessage\":\"This browser could not decode the audio track of the recording.\"}\n   0.013s INFO  analyse: Verdict {\"verdict\":\"This recording is HEVC (H.265), and this browser cannot decode it on this device.\"}\n",
+        "logEntries": 7
+      }
+    },
+    {
       "name": "Phase 3 scene changes without requestVideoFrameCallback",
       "status": "pass",
       "detail": {
         "ok": true,
         "strategy": "seek",
-        "elapsedMs": 2036,
+        "elapsedMs": 898,
         "detected": [
           {
             "timeSec": 3,
@@ -324,11 +513,11 @@
       "status": "pass",
       "detail": {
         "ok": true,
-        "elapsedMs": 81860,
-        "folder": "repro-2026-09-01-0304",
+        "elapsedMs": 84132,
+        "folder": "repro-2026-09-01-0315",
         "frameCount": 24,
         "segmentCount": 0,
-        "zipBytes": 10244385,
+        "zipBytes": 10470735,
         "transcription": {
           "model": "none",
           "device": "none"
@@ -372,7 +561,7 @@
           "done"
         ],
         "validation": {
-          "folder": "repro-2026-09-01-0304",
+          "folder": "repro-2026-09-01-0315",
           "frameCount": 24,
           "segmentCount": 0,
           "errors": [],
@@ -385,11 +574,11 @@
       "status": "pass",
       "detail": {
         "ok": true,
-        "elapsedMs": 24262,
-        "folder": "repro-2026-09-01-0304",
+        "elapsedMs": 27210,
+        "folder": "repro-2026-09-01-0316",
         "frameCount": 9,
         "segmentCount": 0,
-        "zipBytes": 319262,
+        "zipBytes": 318577,
         "transcription": {
           "model": "none",
           "device": "none"
@@ -419,7 +608,7 @@
         ],
         "savedTo": "fixtures/spike-bundle.zip",
         "validation": {
-          "folder": "repro-2026-09-01-0304",
+          "folder": "repro-2026-09-01-0316",
           "frameCount": 9,
           "segmentCount": 0,
           "errors": [],

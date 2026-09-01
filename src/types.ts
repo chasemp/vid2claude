@@ -90,6 +90,8 @@ export interface Settings {
   /** Longest edge of a captured frame, in pixels. */
   maxFrameEdge: number;
   includeUserAgent: boolean;
+  /** Put the run log in the bundle as debug.log. */
+  includeDebugLog: boolean;
   github: GithubSettings;
 }
 
@@ -124,5 +126,6 @@ export const DEFAULT_SETTINGS: Settings = {
   sceneThreshold: 0.05,
   maxFrameEdge: 1280,
   includeUserAgent: true,
+  includeDebugLog: false,
   github: { repo: "", branch: "", basePath: "repro/" },
 };

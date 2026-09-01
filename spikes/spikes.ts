@@ -14,6 +14,8 @@ import { createZip } from "../src/bundle/zip";
 import { runPipeline } from "../src/pipeline";
 import { captureFrames, fitSize, openVideo, VideoLoadError } from "../src/video/frames";
 import { diagnoseVideo } from "../src/video/diagnose";
+import { analyzeFile } from "../src/video/analyze";
+import { Logger } from "../src/log";
 import { detectSceneChanges } from "../src/video/scene-change";
 import { DEFAULT_SETTINGS, type Settings } from "../src/types";
 
@@ -297,6 +299,17 @@ export async function diagnoseFixture(url: string): Promise<unknown> {
   }
 }
 
+/**
+ * The Analyse path: what a user can send when the recording itself cannot
+ * leave their device.
+ */
+export async function analyze(url: string): Promise<unknown> {
+  const file = await fetchFile(url);
+  const logger = new Logger();
+  const report = await analyzeFile(file, { log: logger.scoped("analyse") });
+  return { report, logText: logger.toText(), logEntries: logger.size };
+}
+
 /** A whole run, returned as base64 so the node side can validate the ZIP. */
 export async function fullRun(url: string, overrides: Partial<Settings> = {}): Promise<unknown> {
   const file = await fetchFile(url);
@@ -365,6 +378,7 @@ window.spikes = {
   a5Rotation,
   sceneChanges,
   sceneScores,
+  analyze,
   diagnoseFixture,
   fullRun,
 } as unknown as Window["spikes"];

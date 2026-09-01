@@ -325,6 +325,32 @@ Changing the frame format is the other lever and is deliberately not taken:
 PNG is the one image format Anthropic's own documentation confirms for Claude
 Code, and legible text is the whole point of the frames.
 
+## Sending the evidence instead of the file
+
+The recordings that go wrong are the ones that cannot be handed to anyone: a
+61 MB file on a phone. So the log has to carry enough that the file is not
+needed.
+
+`src/log.ts` keeps a bounded, always-on run log. Every stage writes to it: the
+container probe, the browser's decoding support, the scan strategy and what it
+found, each transcription step, every frame that failed and why, and the sizes
+that came out. Credentials never reach it — the GitHub token is scrubbed by
+key and by shape, checked in `tests/log.test.ts`. When the buffer fills it drops
+from the middle rather than the front, because the first failure is the one that
+explains the rest.
+
+**Analyse only** (`src/video/analyze.ts`) is the path for a file that never
+reaches the pipeline. It reports the container, what this device claims it can
+decode, whether the browser applied the rotation metadata, a seek probe at
+points across the whole file with timings and whether a frame actually painted,
+and whether the audio decodes — then gives a one-line verdict. A failed seek
+gets a fresh decoder before the next probe, so one failure does not poison the
+rest of the report.
+
+Both are checked in the harness on a file this browser plays and on one it
+refuses; the refusal case has to name `hvc1` and the browser's HEVC support in
+the log text, not just in the UI.
+
 ## Still to check on real devices
 
 Nothing below can be answered from CI. Fill in a row when a device says so.

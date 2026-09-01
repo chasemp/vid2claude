@@ -204,6 +204,34 @@ async function main(): Promise<void> {
       ),
     );
 
+    // The log has to stand in for a file nobody can send. These check that it
+    // carries the codec, the browser's decoding support and the failure, on a
+    // file this browser plays and on one it refuses.
+    results.push(
+      await attempt(
+        "Analyse reports a playable recording",
+        () => call(page, "analyze", [primary], 300_000),
+        (value) => {
+          const d = value as { report: { verdict: string; seeks: { ok: boolean }[] }; logText: string };
+          const seeksOk = d.report.seeks.length > 0 && d.report.seeks.every((s) => s.ok);
+          return seeksOk && d.logText.includes("Verdict") ? "pass" : "fail";
+        },
+      ),
+    );
+
+    results.push(
+      await attempt(
+        "Analyse explains a refused recording without the file",
+        () => call(page, "analyze", [FIXTURES.hevc], 300_000),
+        (value) => {
+          const d = value as { report: { verdict: string; container: unknown }; logText: string };
+          const namesCodec = d.logText.includes("hvc1");
+          const namesSupport = d.logText.includes("canPlay") || d.logText.includes("hevc");
+          return namesCodec && namesSupport && d.report.verdict.includes("HEVC") ? "pass" : "fail";
+        },
+      ),
+    );
+
     results.push(
       await attempt(
         "Phase 3 scene changes without requestVideoFrameCallback",

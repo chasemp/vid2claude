@@ -75,6 +75,18 @@ npm run check-pwa      # offline reload and the share-target endpoint, against d
 `npm run spikes -- --headed` shows the browser. Add `--with-transcription` to
 include the model download and a full speech-to-text run.
 
+## When something goes wrong
+
+Every run keeps a log: what the container held, what this device can decode,
+what each stage did, and exactly where it stopped. **Copy log** puts it on the
+clipboard, **Download log** saves it, and a setting adds it to the bundle as
+`debug.log`. Credentials are scrubbed before any of that.
+
+**Analyse only** examines a recording without producing a bundle: container,
+codecs, this device's decoding support, whether rotation was applied, seek
+probes across the whole file, and whether the audio decodes. It is the thing to
+run when a recording is refused, or when the file is too large to send anyone.
+
 ## When a recording is refused
 
 Browsers report an unplayable recording as "media error 4" and nothing more.

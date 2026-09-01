@@ -13,6 +13,8 @@ import { commitBundle, defaultBranchName, GithubError, verifyAccess } from "../e
 import { runPipeline, type RunResult, type StageUpdate } from "../pipeline";
 import { VideoLoadError, VideoSeekError } from "../video/frames";
 import { diagnoseVideo, formatDiagnostics, type Diagnosis } from "../video/diagnose";
+import { analyzeFile } from "../video/analyze";
+import { Logger } from "../log";
 import { defaultTitle } from "../bundle/manifest";
 import { DEFAULT_SETTINGS, MODELS, type Settings } from "../types";
 import { KEYS, del, get, set } from "../store";
@@ -40,6 +42,8 @@ export async function mount(root: HTMLElement): Promise<void> {
   const chooseBtn = $<HTMLButtonElement>("choose");
   const fileName = $("file-name");
   const startBtn = $<HTMLButtonElement>("start");
+  const analyzeBtn = $<HTMLButtonElement>("analyze");
+  const logPanel = $("log-panel");
   const cancelBtn = $<HTMLButtonElement>("cancel");
   const progress = $("progress");
   const stageText = $("stage");
@@ -70,6 +74,7 @@ export async function mount(root: HTMLElement): Promise<void> {
     file = next;
     fileName.textContent = next ? `${next.name} · ${formatBytes(next.size)}` : "No file chosen yet.";
     startBtn.disabled = next === null;
+    analyzeBtn.disabled = next === null;
   };
   setFile(null);
 
@@ -103,10 +108,14 @@ export async function mount(root: HTMLElement): Promise<void> {
     controller = new AbortController();
 
     const started = performance.now();
+    const logger = new Logger();
+    const log = logger.scoped("run");
     try {
       result = await runPipeline({
         file,
         settings,
+        log,
+        logText: () => logger.toText(),
         title: titleInput.value.trim() || defaultTitle(),
         summary: summaryInput.value,
         signal: controller.signal,
@@ -120,6 +129,7 @@ export async function mount(root: HTMLElement): Promise<void> {
       const elapsed = ((performance.now() - started) / 1000).toFixed(1);
       renderResult(resultBox, result, settings, notices, elapsed);
     } catch (err) {
+      log.failure("Run failed", err);
       if (err instanceof DOMException && err.name === "AbortError") {
         addNotice(notices, "warn", "Cancelled. Nothing was written.");
       } else if (err instanceof VideoLoadError && file) {
@@ -132,7 +142,41 @@ export async function mount(root: HTMLElement): Promise<void> {
         addNotice(notices, "error", err instanceof Error ? err.message : String(err));
       }
     } finally {
+      renderLog(logPanel, logger, "run");
       progress.classList.add("hidden");
+      startBtn.disabled = file === null;
+      analyzeBtn.disabled = file === null;
+      cancelBtn.disabled = true;
+      controller = null;
+    }
+  });
+
+  analyzeBtn.addEventListener("click", async () => {
+    if (!file) return;
+    notices.replaceChildren();
+    resultBox.classList.add("hidden");
+    progress.classList.remove("hidden");
+    stageText.textContent = "Analysing the recording";
+    bar.style.width = "0%";
+    analyzeBtn.disabled = true;
+    startBtn.disabled = true;
+    cancelBtn.disabled = false;
+    controller = new AbortController();
+
+    const logger = new Logger();
+    try {
+      const report = await analyzeFile(file, {
+        log: logger.scoped("analyse"),
+        signal: controller.signal,
+      });
+      addReport(notices, report.verdict, JSON.stringify(report, null, 2));
+    } catch (err) {
+      logger.scoped("analyse").failure("Analysis failed", err);
+      addNotice(notices, "error", err instanceof Error ? err.message : String(err));
+    } finally {
+      renderLog(logPanel, logger, "analysis");
+      progress.classList.add("hidden");
+      analyzeBtn.disabled = file === null;
       startBtn.disabled = file === null;
       cancelBtn.disabled = true;
       controller = null;
@@ -213,6 +257,11 @@ function template(settings: Settings): string {
       <label for="include-ua" style="margin:0">Put this device's user agent in README.md</label>
     </div>
 
+    <div class="check">
+      <input type="checkbox" id="include-log" ${settings.includeDebugLog ? "checked" : ""} />
+      <label for="include-log" style="margin:0">Include the run log in the bundle as debug.log</label>
+    </div>
+
     <h2>Commit to GitHub (optional)</h2>
     <div class="row">
       <div>
@@ -240,8 +289,13 @@ function template(settings: Settings): string {
 
   <div class="row" style="margin-top:1.25rem">
     <button class="primary" id="start" type="button" disabled>Process</button>
+    <button id="analyze" type="button" disabled>Analyse only</button>
     <button id="cancel" type="button" disabled>Cancel</button>
   </div>
+  <p class="muted">
+    Analyse reads the file and reports what it holds and what this device can do with it, without
+    producing a bundle. Use it when a recording is refused, or is too big to send anywhere.
+  </p>
 
   <div id="progress" class="hidden">
     <p class="stage" id="stage">Starting</p>
@@ -250,6 +304,7 @@ function template(settings: Settings): string {
 
   <div id="notices"></div>
   <div id="result" class="hidden"></div>
+  <div id="log-panel" class="hidden"></div>
   `;
 }
 
@@ -268,6 +323,7 @@ function bindSettings(root: HTMLElement, settings: Settings, save: () => void): 
   const threshold = $<HTMLInputElement>("threshold");
   const maxEdge = $<HTMLInputElement>("max-edge");
   const includeUa = $<HTMLInputElement>("include-ua");
+  const includeLog = $<HTMLInputElement>("include-log");
   const repo = $<HTMLInputElement>("repo");
   const branch = $<HTMLInputElement>("branch");
   const basePath = $<HTMLInputElement>("base-path");
@@ -284,6 +340,7 @@ function bindSettings(root: HTMLElement, settings: Settings, save: () => void): 
     settings.maxFrameEdge = Math.min(1280, Math.max(320, value));
   });
   bind(includeUa, "change", () => (settings.includeUserAgent = includeUa.checked));
+  bind(includeLog, "change", () => (settings.includeDebugLog = includeLog.checked));
   bind(repo, "change", () => (settings.github.repo = repo.value.trim()));
   bind(branch, "change", () => (settings.github.branch = branch.value.trim()));
   bind(basePath, "change", () => (settings.github.basePath = basePath.value.trim()));
@@ -394,6 +451,80 @@ function renderResult(
       }
     });
   }
+}
+
+/**
+ * The run log, with the two ways it leaves the device: onto the clipboard for
+ * a chat window, or into a file for anything longer.
+ */
+function renderLog(host: HTMLElement, logger: Logger, kind: string): void {
+  const text = logger.toText();
+  host.classList.remove("hidden");
+  host.replaceChildren();
+
+  const details = document.createElement("details");
+  const label = document.createElement("summary");
+  label.textContent = `Debug log (${logger.size} entries from this ${kind})`;
+  details.appendChild(label);
+
+  const pre = document.createElement("pre");
+  pre.textContent = text;
+  pre.style.maxHeight = "24rem";
+  pre.style.overflow = "auto";
+  details.appendChild(pre);
+
+  const row = document.createElement("div");
+  row.className = "row";
+
+  const copy = document.createElement("button");
+  copy.type = "button";
+  copy.textContent = "Copy log";
+  copy.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      copy.textContent = "Copied";
+    } catch {
+      copy.textContent = "Select the text above to copy it";
+    }
+  });
+  row.appendChild(copy);
+
+  const save = document.createElement("button");
+  save.type = "button";
+  save.textContent = "Download log";
+  save.addEventListener("click", () => {
+    const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+    downloadBlob(new Blob([text], { type: "text/plain" }), `vid2claude-${kind}-${stamp}.log`);
+  });
+  row.appendChild(save);
+
+  details.appendChild(row);
+  host.appendChild(details);
+}
+
+/** The verdict from Analyse, with the full report behind a toggle. */
+function addReport(host: HTMLElement, verdict: string, json: string): void {
+  const el = document.createElement("div");
+  el.className = "notice warn";
+
+  const summary = document.createElement("p");
+  summary.style.margin = "0";
+  summary.textContent = verdict;
+  el.appendChild(summary);
+
+  const details = document.createElement("details");
+  details.style.marginTop = ".5rem";
+  const label = document.createElement("summary");
+  label.textContent = "Full report";
+  details.appendChild(label);
+  const pre = document.createElement("pre");
+  pre.textContent = json;
+  pre.style.maxHeight = "24rem";
+  pre.style.overflow = "auto";
+  details.appendChild(pre);
+  el.appendChild(details);
+
+  host.appendChild(el);
 }
 
 /** An error notice that also carries the evidence behind it. */

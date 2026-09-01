@@ -93,8 +93,10 @@ Two notes about Pages specifically:
   headers, so the page is not cross-origin isolated and the WebAssembly backend
   runs single-threaded. WebGPU, the path most phones will take, is unaffected.
   A host that can set those two headers makes the WASM fallback faster.
-- The app must be served over HTTPS. Service workers, and therefore offline use
-  and the Android share target, do not exist on plain HTTP.
+- The app must be served over HTTPS. Service workers (offline use, the Android
+  share target) and WebGPU only exist in a secure context. Turn on **Enforce
+  HTTPS** in the Pages settings; if a visitor still lands on `http://`, the app
+  says what it has lost instead of failing quietly.
 
 The app is a static site: `dist/` can be served from anywhere that speaks
 HTTPS. Model weights are fetched from the Hugging Face CDN on first use and

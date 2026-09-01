@@ -51,6 +51,19 @@ export async function mount(root: HTMLElement): Promise<void> {
   titleInput.value = defaultTitle();
   if (!supportsShareTarget()) shareHelp.classList.add("hidden");
 
+  // Offline use, the share target and WebGPU all require a secure context.
+  // Served over plain HTTP the app still processes a file, but silently loses
+  // all three, so say so rather than letting the user discover it.
+  if (!window.isSecureContext) {
+    addNotice(
+      notices,
+      "warn",
+      `This page is not being served over HTTPS. Processing still works, but the app ` +
+        `cannot be installed, cannot work offline, cannot receive shared files, and ` +
+        `falls back to the slower CPU path for transcription. Open it over https:// instead.`,
+    );
+  }
+
   const setFile = (next: File | null) => {
     file = next;
     fileName.textContent = next ? `${next.name} · ${formatBytes(next.size)}` : "No file chosen yet.";
